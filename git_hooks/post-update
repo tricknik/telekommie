@@ -1,0 +1,12 @@
+#!/usr/bin/python
+""" Telekommunisten Integration Environment Git Post Update Hook
+    Dmytri Kleiner <dk@telekommunisten.net>
+"""
+import sys
+from telekommie.hooks import postUpdate
+(hook, refName) = sys.argv
+try:
+    postUpdate(refName)
+except Exception as e:
+    sys.exit(e);
+

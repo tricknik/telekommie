@@ -1,0 +1,12 @@
+#!/usr/bin/python
+""" Telekommunisten Integration Environment Git Update Hook
+    Dmytri Kleiner <dk@telekommunisten.net>
+"""
+import sys
+from telekommie.hooks import update
+(hook, refName, oldHash, newHash) = sys.argv
+try:
+    update(refName, oldHash, newHash)
+except Exception as e:
+    sys.exit(e);
+
