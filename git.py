@@ -5,16 +5,15 @@
 from subprocess import PIPE, Popen, call
 
 class GitAccessObject():
-    """ Base Class for Git Access Objects
-        Provides access methods to git subprocesses
+    """ Provides access methods to git subprocesses
         with environment variable injection
 
         >>> gitDir = "/etc/telekommie/tests/telekommie.git"
         >>> g = GitAccessObject()
-        >>> g.setEnv('GIT_DIR', gitDir)
-        >>> command = ['git','config', 'core.bare']
-        >>> print g.access(command).upper()
-        TRUE
+        >>> g.setEnv("GIT_DIR", gitDir)
+        >>> command = ["git","config", "core.bare"]
+        >>> g.access(command).upper()
+        'TRUE'
     """
     class Errors:
         class CommandFailed(Exception):
@@ -28,7 +27,7 @@ class GitAccessObject():
     def __init__(self, gitDir=None):
         self.env = None
         if gitDir:
-            self.setEnv('GIT_DIR', gitDir)
+            self.setEnv("GIT_DIR", gitDir)
     def setEnv(self, key, value):
         if None == self.env:
             import os
@@ -89,15 +88,15 @@ class GitCommit():
         info = self.git.access(["git","show", "--pretty=format:%cn", self.hash]) 
         return info.split("\n")[0]
     def pathExists(self, path):
-        """ Verify path exists in object's tree 
+        """ Verify path exists in object"s tree 
 
             >>> gitDir = "/etc/telekommie/tests/telekommie.git"
             >>> g = GitAccessObject(gitDir)
             >>> initHash = "d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e"
             >>> c = g.getCommit(initHash)
-            >>> c.pathExists('README')
+            >>> c.pathExists("README")
             True
-            >>> c.pathExists('MISSINGFILE')
+            >>> c.pathExists("MISSINGFILE")
             False
         """
         pathTest = self.git.access(["git", "ls-tree", "--name-only", self.hash, path]) 
@@ -114,16 +113,15 @@ class GitCommit():
             >>> initHash = "d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e"
             >>> c = g.getCommit(initHash)
             >>> from datetime import datetime
-            >>> tagDate = datetime.now().isoformat()
+            >>> tagDate = "testTag"
             >>> c.tag(tagDate)
             >>> r = g.getRef("tags/%s" % tagDate)
             >>> r.hash()
             'd3bb1c687114d0c59e82ce1c9a1b423c1e0f154e'
         """
-        tagged = False
-        if self.git.access(["git", "tag","-a", self.hash, tagName]) == 0:
-            tagged = True
-        return tagged
+        self.git.setEnv("EDITOR", "")
+        self.git.access(["git", "tag","-d", tagName])
+        self.git.access(["git", "tag", tagName, self.hash])
     def __repr__(self):
         return "GitCommit [%s]" % self.hash
 
@@ -142,12 +140,12 @@ class GitRef():
         self.refName = refName
     def isBranch(self):
         branch = False
-        if 'refs/heads/' == self.refName[:11]:
+        if "refs/heads/" == self.refName[:11]:
             branch = True
         return branch
     def isMaster(self):
         master = False
-        if 'refs/heads/master' == self.refName:
+        if "refs/heads/master" == self.refName:
             master = True
         return master
     def hash(self):
@@ -163,22 +161,22 @@ import unittest
 
 class TestGitAccessObject(unittest.TestCase):
     def testSetEnv(self):
-        g = GitAccessObject('/dev/null')
-        self.assert_('GIT_DIR' in g.env)
-        self.assert_('PATH' in g.env)
-        self.assert_('PWD' in g.env)
-        self.assertEqual(g.env['GIT_DIR'], '/dev/null')
+        g = GitAccessObject("/dev/null")
+        self.assert_("GIT_DIR" in g.env)
+        self.assert_("PATH" in g.env)
+        self.assert_("PWD" in g.env)
+        self.assertEqual(g.env["GIT_DIR"], "/dev/null")
         g = GitAccessObject()
         self.assertEqual(g.env, None)
-        g.setEnv('TEST', 'TESTING')
-        self.assert_('PATH' in g.env)
-        self.assert_('PWD' in g.env)
-        self.assertEqual(g.env['TEST'], 'TESTING')
+        g.setEnv("TEST", "TESTING")
+        self.assert_("PATH" in g.env)
+        self.assert_("PWD" in g.env)
+        self.assertEqual(g.env["TEST"], "TESTING")
     def testAccess(self):
-        g = GitAccessObject('/dev/null')
-        command = ['echo','TESTING']
+        g = GitAccessObject("/dev/null")
+        command = ["echo","TESTING"]
         stdout = g.access(command)
-        self.assertEqual(stdout, 'TESTING')
+        self.assertEqual(stdout, "TESTING")
        
 
 class FakeGitAccessObject(GitAccessObject):
@@ -192,7 +190,7 @@ class FakeGitAccessObject(GitAccessObject):
 
 class TestGitAccessObjectWithFake(unittest.TestCase):
     def setUp(self):
-        self.git = FakeGitAccessObject('/dev/null')
+        self.git = FakeGitAccessObject("/dev/null")
         initHash = "d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e"
         self.commit = self.git.getCommit(initHash)
         initRef = "tags/init"
@@ -220,8 +218,8 @@ index 0000000..4337545
         self.git.setAccessResponse("README")
         self.assert_(self.commit.pathExists("README"))
     def testTag(self):
-        self.commit.tag('test')
-        r = self.git.getRef('tags/test')
+        self.commit.tag("test")
+        r = self.git.getRef("tags/test")
         self.git.setAccessResponse(self.commit.hash)
         self.assertEqual(r.hash(), self.commit.hash)
 
