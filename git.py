@@ -113,14 +113,13 @@ class GitCommit():
             >>> initHash = "d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e"
             >>> c = g.getCommit(initHash)
             >>> from datetime import datetime
-            >>> tagDate = "testTag"
-            >>> c.tag(tagDate)
-            >>> r = g.getRef("tags/%s" % tagDate)
+            >>> tagName = "testTag"
+            >>> c.tag(tagName)
+            >>> r = g.getRef("tags/%s" % tagName)
             >>> r.hash()
             'd3bb1c687114d0c59e82ce1c9a1b423c1e0f154e'
         """
         self.git.setEnv("EDITOR", "")
-        self.git.access(["git", "tag","-d", tagName])
         self.git.access(["git", "tag", tagName, self.hash])
     def __repr__(self):
         return "GitCommit [%s]" % self.hash
