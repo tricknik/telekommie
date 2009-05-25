@@ -1,4 +1,9 @@
-""" Telekommunisten Integration Environment Git Access Objects
+""" Telekommunisten Integration Environment 
+    Git Access Objects
+
+    These classes provide an interface to a 
+    git repository.
+
     Dmytri Kleiner <dk@telekommunisten.net>
 """
 
@@ -29,11 +34,27 @@ class GitAccessObject():
         if gitDir:
             self.setEnv("GIT_DIR", gitDir)
     def setEnv(self, key, value):
+        """ Set environment variable
+
+            >>> gitDir = "/etc/telekommie/tests/telekommie.git"
+            >>> g = GitAccessObject(gitDir)
+            >>> g.setEnv("TEST", "TESTING")
+            >>> g.env["TEST"]
+            'TESTING'
+        """
         if None == self.env:
             import os
             self.env = os.environ.copy()
         self.env[key] = value
     def access(self, command):
+        """ Execute shell command and return response
+
+            >>> gitDir = "/etc/telekommie/tests/telekommie.git"
+            >>> g = GitAccessObject(gitDir)
+            >>> command = ["echo","TESTING"]
+            >>> g.access(command)
+            'TESTING'
+        """
         sub = Popen(command, env=self.env, stdout=PIPE)
         if sub.returncode:
             raise self.CommandError(str(command),
@@ -42,7 +63,7 @@ class GitAccessObject():
         response = sub.communicate()[0].strip()
         return response
     def getCommit(self, hash):
-        """ Create a GitCommit Object
+        """ Retrieve a GitCommit object
 
             >>> gitDir = "/etc/telekommie/tests/telekommie.git"
             >>> g = GitAccessObject(gitDir)
@@ -52,7 +73,7 @@ class GitAccessObject():
         """
         return GitCommit(self, hash)
     def getRef(self, hash):
-        """ Create a GitRef 
+        """ Retrieve a GitRef Object
 
             >>> gitDir = "/etc/telekommie/tests/telekommie.git"
             >>> g = GitAccessObject(gitDir)
@@ -63,16 +84,19 @@ class GitAccessObject():
         return GitRef(self, hash)
 
 class GitCommit():
-    """ Provides information about a specific git
-        commit object from the Object Name (sha1 hash)
-
-        >>> gitDir = "/etc/telekommie/tests/telekommie.git"
-        >>> g = GitAccessObject(gitDir)
-        >>> initHash = "d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e"
-        >>> GitCommit(g, initHash)
-        GitCommit [d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e]
+    """ Provides information about a git commit
     """
+
     def __init__(self, accessObject, hash):
+        """ Initialize with GitAccessObject and Git commit 
+            Object name (sha1 hash)
+
+            >>> gitDir = "/etc/telekommie/tests/telekommie.git"
+            >>> g = GitAccessObject(gitDir)
+            >>> initHash = "d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e"
+            >>> GitCommit(g, initHash)
+            GitCommit [d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e]
+        """
         self.git = accessObject
         self.hash = hash
     def committerName(self):
@@ -88,7 +112,7 @@ class GitCommit():
         info = self.git.access(["git","show", "--pretty=format:%cn", self.hash]) 
         return info.split("\n")[0]
     def pathExists(self, path):
-        """ Verify path exists in object"s tree 
+        """ Verify path exists in object's tree 
 
             >>> gitDir = "/etc/telekommie/tests/telekommie.git"
             >>> g = GitAccessObject(gitDir)
@@ -106,7 +130,7 @@ class GitCommit():
         return found
     def tag(self, tagName):
         """
-            Create a Tag from an Object Name (sha1 hash)
+            Create a tag 
 
             >>> gitDir = "/etc/telekommie/tests/telekommie.git"
             >>> g = GitAccessObject(gitDir)
@@ -118,6 +142,8 @@ class GitCommit():
             >>> r = g.getRef("tags/%s" % tagName)
             >>> r.hash()
             'd3bb1c687114d0c59e82ce1c9a1b423c1e0f154e'
+            >>> g.access(["git", "tag", "-d", tagName])
+            "Deleted tag 'testTag'"
         """
         self.git.setEnv("EDITOR", "")
         self.git.access(["git", "tag", tagName, self.hash])
@@ -127,30 +153,70 @@ class GitCommit():
 class GitRef():
     """ Provides information about a specific git
         reference from the ref name
-
-        >>> gitDir = "/etc/telekommie/tests/telekommie.git"
-        >>> g = GitAccessObject(gitDir)
-        >>> refName = "refs/tags/init"
-        >>> GitRef(g, refName)
-        GitRef [d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e refs/tags/init]
     """
     def __init__(self, accessObject, refName):
+        """ Initialize a GitRef with GitAccessObject and ref name
+
+            >>> gitDir = "/etc/telekommie/tests/telekommie.git"
+            >>> g = GitAccessObject(gitDir)
+            >>> refName = "refs/tags/init"
+            >>> GitRef(g, refName)
+            GitRef [d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e refs/tags/init]
+        """
         self.git = accessObject
         self.refName = refName
     def isBranch(self):
+        """ Is this ref a branch?
+
+            >>> gitDir = "/etc/telekommie/tests/telekommie.git"
+            >>> g = GitAccessObject(gitDir)
+            >>> r = g.getRef("refs/tags/init")
+            >>> r.isBranch()
+            False
+            >>> r = g.getRef("refs/heads/master")
+            >>> r.isBranch()
+            True
+        """
         branch = False
         if "refs/heads/" == self.refName[:11]:
             branch = True
         return branch
     def isMaster(self):
+        """ Is this ref the master branch?
+
+            >>> gitDir = "/etc/telekommie/tests/telekommie.git"
+            >>> g = GitAccessObject(gitDir)
+            >>> r = g.getRef("refs/tags/init")
+            >>> r.isMaster()
+            False
+            >>> r = g.getRef("refs/heads/master")
+            >>> r.isMaster()
+            True
+        """
         master = False
         if "refs/heads/master" == self.refName:
             master = True
         return master
     def hash(self):
+        """ Return the object name (sha1 hash) for the ref
+            
+            >>> gitDir = "/etc/telekommie/tests/telekommie.git"
+            >>> refName = "refs/tags/init"
+            >>> g = GitAccessObject(gitDir).getRef(refName)
+            >>> g.hash()
+            'd3bb1c687114d0c59e82ce1c9a1b423c1e0f154e'
+        """
         return self.git.access(["git", "show-ref", "-s", self.refName])
-    def getCommitObject(self):
-        return gitCommitObject(self.hash())
+    def getCommit(self):
+        """ Return a GitCommit object
+
+            >>> gitDir = "/etc/telekommie/tests/telekommie.git"
+            >>> refName = "refs/tags/init"
+            >>> g = GitAccessObject(gitDir).getRef(refName)
+            >>> g.getCommit()
+            GitCommit [d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e]
+        """
+        return GitCommit(self.git, self.hash())
     def __repr__(self):
         return "GitRef [%s %s]" % (self.hash(), self.refName)
 
@@ -158,52 +224,62 @@ class GitRef():
 
 import unittest
 
-class TestGitAccessObject(unittest.TestCase):
-    def testSetEnv(self):
-        g = GitAccessObject("/dev/null")
-        self.assert_("GIT_DIR" in g.env)
-        self.assert_("PATH" in g.env)
-        self.assert_("PWD" in g.env)
-        self.assertEqual(g.env["GIT_DIR"], "/dev/null")
-        g = GitAccessObject()
-        self.assertEqual(g.env, None)
-        g.setEnv("TEST", "TESTING")
-        self.assert_("PATH" in g.env)
-        self.assert_("PWD" in g.env)
-        self.assertEqual(g.env["TEST"], "TESTING")
-    def testAccess(self):
-        g = GitAccessObject("/dev/null")
-        command = ["echo","TESTING"]
-        stdout = g.access(command)
-        self.assertEqual(stdout, "TESTING")
-       
-
 class FakeGitAccessObject(GitAccessObject):
+    """ Testing double for GitAccessObject 
+    """
     def __init__(self, gitDir=None):
         GitAccessObject.__init__(self, gitDir)
         self.response = None
     def setAccessResponse(self, str):
+        """ What to return when access is called
+
+            >>> g = FakeGitAccessObject()
+            >>> g.setAccessResponse("IT'S ALWAYS SIX O'CLOCK?!")
+            >>> g.access(["What is the time in Akademgorod?"])
+            "IT'S ALWAYS SIX O'CLOCK?!"
+        """
         self.response = str.strip()
     def access(self, command):
+        """ Always return what is set by setAccessResponse
+        """
         return self.response
 
-class TestGitAccessObjectWithFake(unittest.TestCase):
+class TestFakeGitAccessObject(unittest.TestCase):
     def setUp(self):
-        self.git = FakeGitAccessObject("/dev/null")
+        """ Instantiate a FakeGitAccessObject double for testing
+        """
+        self.git = FakeGitAccessObject()
         initHash = "d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e"
         self.commit = self.git.getCommit(initHash)
         initRef = "tags/init"
         self.ref = self.git.getRef(initRef)
+
+    # GitAccessObject Tests
+
+    def testSetEnv(self):
+        """ Test Set Environment Variable
+        """
+        self.git.setEnv("TEST", "TESTING")
+        self.assertEqual(self.git.env["TEST"],"TESTING")
     def testGetCommit(self):
+        """ Verify getCommit returned a GitCommit object
+        """
         assertRepr = "GitCommit [d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e]"
         refRepr = str(self.commit)
         self.assertEqual(refRepr, assertRepr)
     def testGetRef(self):
+        """ Verify getRef returned a GitRef object
+        """
         assertRepr = "GitRef [d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e tags/init]"
         self.git.setAccessResponse("d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e")
         refRepr = str(self.ref)
         self.assertEqual(refRepr, assertRepr)
+
+    # GitCommit Tests
+
     def testCommitterName(self):
+        """ Parse Committer Name from git info response
+        """
         fakeShow = \
 """
 Dmytri Kleiner
@@ -214,13 +290,40 @@ index 0000000..4337545
         self.git.setAccessResponse(fakeShow)
         self.assertEqual(self.commit.committerName(), "Dmytri Kleiner")
     def testPathExists(self):
+        """ Verify GitCommit.pathExists works with double
+        """
         self.git.setAccessResponse("README")
         self.assert_(self.commit.pathExists("README"))
     def testTag(self):
+        """ Verify GitRef.hash method works with double
+        """
         self.commit.tag("test")
         r = self.git.getRef("tags/test")
         self.git.setAccessResponse(self.commit.hash)
         self.assertEqual(r.hash(), self.commit.hash)
+
+    # GitRef Tests
+
+    def testGetCommit(self):
+        """ Test GitRef.getCommit returns a GitCommit Objet
+        """
+        self.git.setAccessResponse("d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e")
+        c = self.ref.getCommit()
+        self.assertEqual(c.hash, self.commit.hash)
+    def testHash(self):
+        """ Test GitRef.hash returns the object name (sha1 hash)
+        """
+        self.git.setAccessResponse("d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e")
+        self.assertEqual(self.ref.hash(), self.commit.hash)
+    def testIsBranch(self):
+        """ Test GitRef.isBranch returns False for ref "tags/init"
+        """
+        self.assertEqual(self.ref.isBranch(), False)
+    def testIsMaster(self):
+        """ Test GitRef.isMaster returns False for ref "tags/init"
+        """
+        self.assertEqual(self.ref.isMaster(), False)
+
 
 def _docTest():
     import doctest

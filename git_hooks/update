@@ -1,5 +1,6 @@
 #!/usr/bin/python
-""" Telekommunisten Integration Environment Git Update Hook
+""" Telekommunisten Integration Environment 
+    Git Update Hook
     Dmytri Kleiner <dk@telekommunisten.net>
 """
 import sys

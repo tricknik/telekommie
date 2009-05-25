@@ -1,4 +1,9 @@
-""" Telekommunisten Integration Environment Hooks Model
+""" Telekommunisten Integration Environment 
+    Hooks Model
+
+    This class implements domain logic methods
+    for telekommie git hooks
+
     Dmytri Kleiner <dk@telekommunisten.net>
 """
 
@@ -23,11 +28,6 @@ class Hooks:
             def __str__(self):
                 return "Unable to create tag %s from %s" % \
                     (self.refName, self.tagName)
-    @staticmethod
-    def checkUpdate(head, update):
-            updateCommitter = update.committerName()
-            if head.committerName() != updateCommitter:
-                raise Hooks.Errors.CommitterMismatch(updateCommitter)
 
     @staticmethod
     def update(refName, oldHash, newHash, accessObject=None):
@@ -50,11 +50,19 @@ class Hooks:
         branch = accessObject.getRef(refName)
         if  branch.isMaster() or not branch.isBranch():
             raise Hooks.Errors.RefDisallowed(refName)
-        head = branch.getCommitObject()
+        head = branch.getCommit()
         if oldHash != "0" * 40:
             update = accessObject.getCommitObject(newHash)
-            self.checkUpdate(head, update)
+            self.haveMatchingCommitterNames(head, update)
 
+    @staticmethod
+    def haveMatchingCommitterNames(head, update):
+        """ Given two GitCommit objects, verify that the
+            committer name has not changed
+        """
+        updateCommitter = update.committerName()
+        if head.committerName() != updateCommitter:
+            raise Hooks.Errors.CommitterMismatch(updateCommitter)
 
 # TEST CODE
 
@@ -66,35 +74,41 @@ class TestHooks(unittest.TestCase):
         from git import FakeGitAccessObject
         self.git = FakeGitAccessObject()
     def testUpdateMaster(self):
+        """ Telekommie should not allow pushing to master
+        """
         def tryToUpdateMaster():
             Hooks.update("master","0" * 40, "0" * 40, self.git)
         self.assertRaises(Hooks.Errors.RefDisallowed, tryToUpdateMaster)
     def testUpdateTag(self):
+        """ Telekommie should not allow pushing to a tag
+        """
         def tryToUpdateTag():
             Hooks.update("tags/init","0" * 40, "0" * 40, self.git)
         self.assertRaises(Hooks.Errors.RefDisallowed, tryToUpdateTag)
     def testChangeCommitter(self):
-       def tryToChangeCommitter(self=self):
-           from git import FakeGitAccessObject
-           fakeShow = \
+        """ Telekommie should not allow changing the commiter of a branch
+        """
+        def tryToChangeCommitter(self=self):
+            from git import FakeGitAccessObject
+            fakeShow = \
 """
 Monty Cantsin
 diff --git a/NEOISM b/NEOISM
 new file mode 100644
 index 0000000..6666666
 """
-           self.git.setAccessResponse(fakeShow)
-           head = self.git.getCommit("0"*40)
-           other = FakeGitAccessObject()
-           fakeShow = \
+            self.git.setAccessResponse(fakeShow)
+            head = self.git.getCommit("0"*40)
+            other = FakeGitAccessObject()
+            fakeShow = \
 """
 Dmytri Kleiner
 diff --git a/README b/README
 new file mode 100644
 index 0000000..4337545
 """
-           other.setAccessResponse(fakeShow)
-           update = other.getCommit("0"*40)
-           Hooks.checkUpdate(head, update)
-       self.assertRaises(Hooks.Errors.CommitterMismatch, tryToChangeCommitter)
+            other.setAccessResponse(fakeShow)
+            update = other.getCommit("0"*40)
+            Hooks.haveMatchingCommitterNames(head, update)
+            self.assertRaises(Hooks.Errors.CommitterMismatch, tryToChangeCommitter)
 
