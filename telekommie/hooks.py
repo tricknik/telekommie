@@ -52,8 +52,8 @@ class Hooks:
             raise Hooks.Errors.RefDisallowed(refName)
         head = branch.getCommit()
         if oldHash != "0" * 40:
-            update = accessObject.getCommitObject(newHash)
-            self.haveMatchingCommitterNames(head, update)
+            update = accessObject.getCommit(newHash)
+            Hooks.haveMatchingCommitterNames(head, update)
 
     @staticmethod
     def haveMatchingCommitterNames(head, update):

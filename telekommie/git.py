@@ -7,9 +7,9 @@
     Dmytri Kleiner <dk@telekommunisten.net>
 """
 
-from subprocess import PIPE, Popen, call
+from shell import ShellAccessObject
 
-class GitAccessObject():
+class GitAccessObject(ShellAccessObject):
     """ Provides access methods to git subprocesses
         with environment variable injection
 
@@ -20,48 +20,10 @@ class GitAccessObject():
         >>> g.access(command).upper()
         'TRUE'
     """
-    class Errors:
-        class CommandFailed(Exception):
-            def __init__(self, command, err, code):
-                self.command = command
-                self.err = err
-                self.code = code
-            def __repr__(self):
-                return "Command %s failed: %s (%s)" % \
-                        (self.command, self.err, self.code)
     def __init__(self, gitDir=None):
-        self.env = None
+        ShellAccessObject.__init__(self) 
         if gitDir:
             self.setEnv("GIT_DIR", gitDir)
-    def setEnv(self, key, value):
-        """ Set environment variable
-
-            >>> gitDir = "/etc/telekommie/tests/telekommie.git"
-            >>> g = GitAccessObject(gitDir)
-            >>> g.setEnv("TEST", "TESTING")
-            >>> g.env["TEST"]
-            'TESTING'
-        """
-        if None == self.env:
-            import os
-            self.env = os.environ.copy()
-        self.env[key] = value
-    def access(self, command):
-        """ Execute shell command and return response
-
-            >>> gitDir = "/etc/telekommie/tests/telekommie.git"
-            >>> g = GitAccessObject(gitDir)
-            >>> command = ["echo","TESTING"]
-            >>> g.access(command)
-            'TESTING'
-        """
-        sub = Popen(command, env=self.env, stdout=PIPE)
-        if sub.returncode:
-            raise self.CommandError(str(command),
-                    sub.stderr,
-                    sub.returncode)
-        response = sub.communicate()[0].strip()
-        return response
 
     def getCommit(self, hash):
         """ Retrieve a GitCommit object
@@ -130,8 +92,7 @@ class GitCommit():
             found = True
         return found
     def tag(self, tagName):
-        """
-            Create a tag 
+        """ Create a tag 
 
             >>> gitDir = "/etc/telekommie/tests/telekommie.git"
             >>> g = GitAccessObject(gitDir)
@@ -148,7 +109,7 @@ class GitCommit():
         """
         self.git.setEnv("EDITOR", "")
         self.git.access(["git", "tag", tagName, self.hash])
-    def __repr__(self):
+    def __str__(self):
         return "GitCommit [%s]" % self.hash
 
 class GitRef():

@@ -27,11 +27,11 @@ class Tests(unittest.TestCase):
     def setUp(self):
         """ Instantiate a FakeGitAccessObject double for testing
         """
-        self.git = FakeGitAccessObject()
+        self.git = FakeGitAccessObject("/dev/null")
         initHash = "d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e"
         self.commit = self.git.getCommit(initHash)
-        initRef = "tags/init"
-        self.ref = self.git.getRef(initRef)
+        self.ref = self.git.getRef("tags/init")
+        self.masterref = self.git.getRef("refs/heads/master")
 
     # GitAccessObject Tests
 
@@ -89,6 +89,7 @@ index 0000000..4337545
         self.git.setAccessResponse("d3bb1c687114d0c59e82ce1c9a1b423c1e0f154e")
         c = self.ref.getCommit()
         self.assertEqual(c.hash, self.commit.hash)
+        self.assertTrue(str(c))
     def testHash(self):
         """ Test GitRef.hash returns the object name (sha1 hash)
         """
@@ -97,9 +98,11 @@ index 0000000..4337545
     def testIsBranch(self):
         """ Test GitRef.isBranch returns False for ref "tags/init"
         """
-        self.assertEqual(self.ref.isBranch(), False)
+        self.assertTrue(self.masterref.isBranch())
+        self.assertFalse(self.ref.isBranch())
     def testIsMaster(self):
         """ Test GitRef.isMaster returns False for ref "tags/init"
         """
-        self.assertEqual(self.ref.isMaster(), False)
+        self.assertTrue(self.masterref.isMaster())
+        self.assertFalse(self.ref.isMaster())
        

@@ -1,1 +1,1 @@
-__all__ = ["git","hooks"]
+__all__ = ["git","hooks","shell"]
